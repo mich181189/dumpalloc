@@ -1,0 +1,24 @@
+diff -rupN binutils-2.24-clean/libiberty/configure binutils-2.24/libiberty/configure
+--- binutils-2.24-clean/libiberty/configure	2013-11-08 10:13:49.000000000 +0000
++++ binutils-2.24/libiberty/configure	2015-08-26 10:16:47.612432305 +0100
+@@ -5507,7 +5507,7 @@ fi
+ 
+ setobjs=
+ CHECK=
+-target_header_dir=
++
+ if test -n "${with_target_subdir}"; then
+ 
+   # We are being configured as a target library.  AC_REPLACE_FUNCS
+diff -rupN binutils-2.24-clean/libiberty/configure.ac binutils-2.24/libiberty/configure.ac
+--- binutils-2.24-clean/libiberty/configure.ac	2013-11-08 10:13:49.000000000 +0000
++++ binutils-2.24/libiberty/configure.ac	2015-08-26 10:16:52.536432396 +0100
+@@ -405,7 +405,7 @@ fi
+ 
+ setobjs=
+ CHECK=
+-target_header_dir=
++
+ if test -n "${with_target_subdir}"; then
+ 
+   # We are being configured as a target library.  AC_REPLACE_FUNCS
