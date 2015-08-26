@@ -66,12 +66,13 @@ ExternalProject_Add_Step(
 
 ExternalProject_Get_Property( binutils-2.24 install_dir )
 
+include_directories(${install_dir}/include ${install_dir}/include/libiberty)
 
-set( CMAKE_CXX_FLAGS " -I${install_dir}/include -I${install_dir}/include/libiberty ${CMAKE_CXX_FLAGS} -D_GNU_SOURCE=1 -D__STDC_LIMIT_MACROS=1 -O3 -fvisibility=hidden -fPIC -pthread " )
+set( CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -D_GNU_SOURCE=1 -D__STDC_LIMIT_MACROS=1 -O3 -fvisibility=hidden -fPIC -pthread " )
 
 set( CMAKE_EXE_LINKER_FLAGS " -L${install_dir}/lib -Wl,-as-needed " )
 
 add_executable ( readalloc src/readalloc.cpp src/Symbol.cpp src/SourceFile.cpp src/Object.cpp src/CallSite.cpp )
 add_dependencies ( readalloc binutils-2.24 )
-target_link_libraries( readalloc bfd iberty z dl c boost_program_options  )
+target_link_libraries( readalloc bfd iberty z dl c ${Boost_LIBRARIES} )
 
