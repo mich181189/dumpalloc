@@ -756,11 +756,18 @@ static void init() {
 		char* output_file = getenv("DUMPALLOC_FILE");
 
 		if (output_file) {
+			int lenOfName = strlen(output_file) + 10;
+			char* real_output_file = malloc(lenOfName);
+			const uint32_t pid = (uint32_t)getpid();
+			snprintf(real_output_file, lenOfName, "%s_%lu.dump", output_file, pid);
 
-			if ((dump_fd = open(output_file, (O_CREAT | O_TRUNC | O_WRONLY), (S_IRUSR|S_IWUSR))) == -1) {
+			if ((dump_fd = open(real_output_file, (O_CREAT | O_TRUNC | O_WRONLY), (S_IRUSR|S_IWUSR))) == -1) {
 				ERROR_MSG("Failed to open output file for writing: %s\n", output_file);
+				real_free(real_output_file);
 				exit(1);
 			}
+
+			real_free(real_output_file);
 
 		} else {
 
