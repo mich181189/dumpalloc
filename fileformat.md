@@ -12,7 +12,7 @@ This file intends to explain the (planned) dumpalloc file format. It is intended
 
 ## Composite Types
 ### String
-Strings shall be expressed as a 4 byte length followed by the literal characters.
+Strings are expressed as a 4 byte length followed by the literal characters.
 Any non-ascii values should be expressed as UTF-8 code points.
 Strings are not NULL terminated.
 
@@ -20,6 +20,12 @@ Byte | type | description
 --- | --- | ---
 0-3 | integer | length
 4-n | char | string contents
+
+### Timestamp
+Byte | type | description
+--- | --- | ---
+0-7 | integer (64-bit) | UNIX timestamp
+8-11 | integer (32-bit) | nanoseconds since last second
 
 ## Record Types
 In general, all records take the format of a type field and a length header.
@@ -37,6 +43,7 @@ Name | Type | Length | Value
 ---- | --- | --- | ---
 Record Type | char | 4 | 'PROC'
 Record Length | integer | 4 | length of record after this point
+Process ID | integer | 4 | process ID of the process
 Process Name | string | variable | full path to object
 
 ### Object Record
@@ -46,13 +53,19 @@ Record Type | char | 4 | 'OBJE'
 Record Length | integer | 4 | length of record after this point
 Object Name | string | variable | full path to object
 
+It's worth noting in this case that actually, there will be two length fields next to each other (the record and the string). This is considered to be an acceptable side effect of a predictable file format.
+
 ### Allocation Record
 Name | Type | Length | Value
 ---- | --- | --- | ---
 Record Type | char | 4 | 'ALOC'
 Record Length | integer | 4 | length of record after this point
 Memory Address | pointer | 8 | address of memory allocated
+Allocation TIme | timestamp | 12 | timestamp of memory allocation
+| | |
 Stack Entries | Frame Records | variable | Frames of allocation
+
+Note that the frame records are not included in the count of the record length. There may be zero or more frame records after an allocation record, ending in a frame record of type TERM.
 
 ### Frame Record
 Frame records are a little different in that there are multiple subtypes, including a termination marker
