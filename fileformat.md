@@ -99,7 +99,7 @@ A termination frame ends this allocation call trace.
 ### Deallocation Record
 Name | Type | Length | Value
 ---- | --- | --- | ---
-Record Type | char | 4 | 'ALOC'
+Record Type | char | 4 | 'DALC'
 Record Length | integer | 4 | length of record after this point
 Memory Address | pointer | 8 | address of memory deallocated
 
