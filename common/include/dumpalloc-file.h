@@ -20,6 +20,12 @@
 #ifndef DUMPALLOC_FILE_H
 #define DUMPALLOC_FILE_H
 
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     int64_t seconds;
     uint32_t nanoseconds;
@@ -56,9 +62,9 @@ char* dumpalloc_file_read_string(int fd);
 /**
  * \brief free a string allocated by dumpalloc_file_read_string
  * 
- * \param[in] string pointer to string to free.
+ * \param[in] str pointer to string to free.
  */
-void dumpalloc_file_free_string(char* string);
+void dumpalloc_file_free_string(char* str);
 
 /**
  * \brief read a timestamp from the provided FD
@@ -122,6 +128,21 @@ int dumpalloc_file_read_allocation_record(int fd, uint64_t* address, dumpalloc_f
  */
 dumpalloc_file_frame_record_t* dumpalloc_file_read_frame_record(int fd);
 
+/**
+ * \brief read a precalc frame from a frame record
+ * 
+ * \param[in] frame frame to read payload from
+ * \return pointer to dumpalloc_file_precalc_record_t on success. NULL on failure. Returned value must be freed with dumpalloc_file_free_precalc_record
+ */
+dumpalloc_file_precalc_record_t* dumpalloc_file_read_precalc_frame(dumpalloc_file_frame_record_t* frame);
+
+/** 
+ * \brief free structure returned from dumpalloc_file_read_precalc_frame
+ * 
+ * \param[in] rec pointer to free
+ */
+void dumpalloc_file_free_precalc_record(dumpalloc_file_precalc_record_t* rec);
+
 /** 
  * \brief free structure returned from dumpalloc_file_read_frame_record
  * 
@@ -137,5 +158,9 @@ void dumpalloc_file_free_frame_record(dumpalloc_file_frame_record_t* rec);
  * \return zero on success, non-zero on failure.
  */
 int dumpalloc_file_read_deallocation_record(int fd, uint64_t* address);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
