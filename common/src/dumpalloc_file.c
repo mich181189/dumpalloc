@@ -18,12 +18,13 @@
  */
 
 #include "../include/dumpalloc-file.h"
-#include "../include/endian.h"
+//#include "../include/endian.h"
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
-static int read_bytes(int fd, char* buffer, size_t expected_len) {
+static int read_bytes(int fd, void* buffer, size_t expected_len) {
 
 	int ret = 0;
 	int total_read = 0;
@@ -70,7 +71,8 @@ char* dumpalloc_file_read_string(int fd) {
     
     length = le32toh(length);
     
-    char* str = calloc(length, 1);
+    // Allocate and zero an extra byte for the null terminator
+    char* str = calloc(length+1, 1);
     if(!str) {
         return NULL;
     }
@@ -145,6 +147,8 @@ int dumpalloc_file_read_process_record(int fd, int32_t* pid, char** name) {
     if(read_bytes(fd, pid, sizeof(int32_t)) != sizeof(int32_t)) {
         return 1;
     }
+
+    *pid = le32toh(*pid);
     
     *name = dumpalloc_file_read_string(fd);
     if(*name == NULL) {
@@ -186,22 +190,121 @@ int dumpalloc_file_read_allocation_record(int fd, uint64_t* address, dumpalloc_f
     return (*timestamp != NULL) ? 0 : 1;
 }
 
-dumpalloc_file_frame_record_t* dumpalloc_file_read_frame_record(int fd) {
+dumpalloc_file_frame_record_t* dumpalloc_file_read_frame_record(int fd, int32_t record_size) {
+    const int32_t payloadSize = record_size-4;
+
+    dumpalloc_file_frame_record_t* rec = calloc(1,sizeof(dumpalloc_file_frame_record_t));
+    rec->payload_length = record_size-4;
+    if(read_bytes(fd, rec->type, 4) != 4) {
+        free(rec);
+        return NULL;
+    }
+
+    rec->payload = malloc(rec->payload_length);
+    if(!rec->payload) {
+        free(rec);
+        return NULL;
+    }
+
+    if(read_bytes(fd, rec->payload, rec->payload_length) != rec->payload_length)
+    {
+        free(rec->payload);
+        free(rec);
+        return NULL;
+    }
+
+    return rec;
+}
+
+// Read string from buffer, up to maxLength bytes
+static char* readStringFromBuffer(void* buffer, int32_t maxLength, int32_t* consumed) {
+    assert(buffer != NULL);
+    assert(consumed != NULL);
+
+    void* bufferCursor = buffer;
+    int32_t remainingBuffer = maxLength;
+    consumed = 0;
     
+    if(remainingBuffer < sizeof(int32_t)) {
+        // not enough buffer to get length
+        return NULL;
+    }
+    
+    int32_t strlength;
+    memcpy(&strlength, bufferCursor, sizeof(int32_t));
+    remainingBuffer -= sizeof(int32_t);
+    bufferCursor += sizeof(int32_t);
+    strlength = le32toh(strlength);
+
+    if(strlength+1 > remainingBuffer) {
+        return NULL;
+    }
+
+    char* str = calloc(strlength+1, 1);
+    memcpy(str, bufferCursor, strlength);
+    consumed = sizeof(int32_t) + strlength;
 }
 
 dumpalloc_file_precalc_record_t* dumpalloc_file_read_precalc_frame(dumpalloc_file_frame_record_t* frame) {
+    int32_t remainingPayload = frame->payload_length;
+    void* payloadCursor = frame->payload;
+
+    dumpalloc_file_precalc_record_t* rec = calloc(1,sizeof(dumpalloc_file_precalc_record_t));
+
+    int32_t consumed = 0;
     
-}
+    rec->function_name = readStringFromBuffer(payloadCursor, remainingPayload, &consumed);
+    if(!rec->function_name) {
+        free(rec);
+        return NULL;
+    }
+
+    remainingPayload -= consumed;
+    payloadCursor += consumed;
+
+    consumed = 0;
+    rec->source_file_name = readStringFromBuffer(payloadCursor, remainingPayload, consumed);
+    if(!rec->source_file_name) {
+        free(rec->function_name);
+        free(rec);
+        return NULL;
+    }
+
+    remainingPayload -= consumed;
+    payloadCursor += consumed;
+
+    if(remainingPayload < sizeof(uint32_t)) {
+        free(rec->function_name);
+        free(rec->source_file_name);
+        free(rec);
+        return NULL;
+    }
+
+    memcpy(payloadCursor, &rec->line_number, sizeof(uint32_t));
+    rec->line_number = le32toh(rec->line_number);
+
+    return rec;
+}   
 
 void dumpalloc_file_free_precalc_record(dumpalloc_file_precalc_record_t* rec) {
-    
+    if(rec) {
+        free(rec->function_name);
+        free(rec->source_file_name);
+        free(rec);
+    }
 }
 
 void dumpalloc_file_free_frame_record(dumpalloc_file_frame_record_t* rec) {
-    
+    if(rec) {
+        free(rec->payload);
+        free(rec);
+    }
 }
 
 int dumpalloc_file_read_deallocation_record(int fd, uint64_t* address) {
-    
+    if(read_bytes(fd, address, sizeof(uint64_t)) != sizeof(uint64_t)) {
+        return 1;
+    }
+
+    return 0;
 }

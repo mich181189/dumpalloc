@@ -35,12 +35,12 @@ typedef struct {
     char* function_name;
     char* source_file_name;
     uint32_t line_number;
-} dumpalloc_file_precalc_record_t
+} dumpalloc_file_precalc_record_t;
 
 typedef struct {
     char type[4];
     void* payload;
-    size_t payload_length;
+    uint32_t payload_length;
 } dumpalloc_file_frame_record_t;
 
 /**
